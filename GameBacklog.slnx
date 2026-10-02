@@ -1,10 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/GameBacklog.Api/GameBacklog.Api.csproj" />
     <Project Path="src/GameBacklog.Domain/GameBacklog.Domain.csproj" />
     <Project Path="src/GameBacklog.Infrastructure/GameBacklog.Infrastructure.csproj" />
-  </Folder>
-  <Folder Name="/src/GameBacklog.Ap/">
-    <Project Path="src/GameBacklog.Ap/GameBacklog.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/GameBacklog.IntegrationTests/GameBacklog.IntegrationTests.csproj" />
