@@ -1,11 +1,20 @@
-@GameBacklog.Api_HostAddress = http://localhost:5112
+@host = http://localhost:5112
 
-POST {{GameBacklog.Api_HostAddress}}/api/auth/register
+### Register (run once)
+POST {{host}}/api/auth/register
 Content-Type: application/json
 
-{
-  "email": "test@example.com",
-  "password": "Password123"
-}
+{ "email": "test@example.com", "password": "Passw0rd!", "confirmPassword": "Passw0rd!" }
 
-###
+### Login
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "test@example.com", "password": "Passw0rd!" }
+
+### Protected endpoint: uses the token from the login response
+GET {{host}}/api/games
+Authorization: Bearer {{login.response.body.token}}
+
+

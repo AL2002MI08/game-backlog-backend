@@ -1,3 +1,5 @@
+using GameBacklog.Api.Extensions;
+using GameBacklog.Api.Services;
 using GameBacklog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +13,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connection));
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -26,6 +31,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
