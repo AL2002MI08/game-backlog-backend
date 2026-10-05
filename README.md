@@ -15,10 +15,11 @@ ASP.NET Core API for gamers to manage their game backlog: track status, rate gam
    ```
    psql -d postgres -c "CREATE DATABASE gamebacklog_dev;"
    ```
-3. Create a `.env` file at the repository root containing:
+3. Create a `.env` file at the repository root from the example, then fill in your values (see `.env.example` for every variable):
    ```
-   DB_URL=Host=localhost;Port=5432;Database=gamebacklog_dev;Username=YOUR_MAC_USERNAME
+   cp .env.example .env
    ```
+   Generate `JWT_KEY`.
 4. Create the tables:
    ```
    dotnet ef database update --project src/GameBacklog.Infrastructure --startup-project src/GameBacklog.Api
