@@ -32,10 +32,11 @@ namespace GameBacklog.Api.Services {
                 CreatedAt = now,
                 UpdatedAt = now,
             };
+            
             SetStatus(game, request.Status, now);
-
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
+            
             return GameResponse.From(game);
         }
 
@@ -85,8 +86,13 @@ namespace GameBacklog.Api.Services {
 
         private static void SetStatus(Game game, GameStatus status, DateTime now)
         {
-            if (status == GameStatus.UNPLAYED) game.StartedAt = null;
-            else if (status != GameStatus.ABANDONED) game.StartedAt ??= now;
+            if (status == GameStatus.UNPLAYED)
+            {
+                game.StartedAt = null;
+            }
+            else if (status != GameStatus.ABANDONED) { 
+                game.StartedAt ??= now;
+            }
 
             game.FinishedAt = status == GameStatus.FINISHED ? game.FinishedAt ?? now : null;
             game.Status = status;
