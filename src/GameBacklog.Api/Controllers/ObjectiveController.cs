@@ -15,41 +15,27 @@ namespace GameBacklog.Api.Controllers {
         [HttpPost]
         public async Task<IActionResult> Create(Guid gameId, [FromBody] CreateObjectiveRequest request)
         {
-            if (!await objectiveService.GameExistsAsync(UserId, gameId)) return GameNotFound();
-
-            var objective = await objectiveService.CreateObjectiveAsync(gameId, request);
-            return objective is null
-                ? Conflict(new { message = "This game already has an objective with this label." })
-                : StatusCode(StatusCodes.Status201Created, objective);
+            var objective = await objectiveService.CreateObjectiveAsync(UserId, gameId, request);
+            return StatusCode(StatusCodes.Status201Created, objective);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll(Guid gameId)
         {
-            if (!await objectiveService.GameExistsAsync(UserId, gameId)) return GameNotFound();
-
-            return Ok(await objectiveService.GetObjectivesAsync(gameId));
+            return Ok(await objectiveService.GetObjectivesAsync(UserId, gameId));
         }
 
         [HttpPatch("{id:guid}")]
         public async Task<IActionResult> Update(Guid gameId, Guid id, [FromBody] UpdateObjectiveRequest request)
         {
-            if (!await objectiveService.GameExistsAsync(UserId, gameId)) return GameNotFound();
-
-            var objective = await objectiveService.UpdateObjectiveAsync(gameId, id, request);
-            return objective is null ? ObjectiveNotFound() : Ok(objective);
+            return Ok(await objectiveService.UpdateObjectiveAsync(UserId, gameId, id, request));
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid gameId, Guid id)
         {
-            if (!await objectiveService.GameExistsAsync(UserId, gameId)) return GameNotFound();
-
-            var deleted = await objectiveService.DeleteObjectiveAsync(gameId, id);
-            return deleted ? NoContent() : ObjectiveNotFound();
+            await objectiveService.DeleteObjectiveAsync(UserId, gameId, id);
+            return NoContent();
         }
-
-        private NotFoundObjectResult GameNotFound() => NotFound(new { message = "Game not found." });
-        private NotFoundObjectResult ObjectiveNotFound() => NotFound(new { message = "Objective not found." });
     }
 }

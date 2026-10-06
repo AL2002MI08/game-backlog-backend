@@ -1,4 +1,5 @@
 using GameBacklog.Api.Dtos;
+using GameBacklog.Api.Exceptions;
 using GameBacklog.Api.Services.Interfaces;
 using GameBacklog.Domain.Entities;
 using GameBacklog.Infrastructure.Persistence;
@@ -20,7 +21,7 @@ namespace GameBacklog.Api.Services {
             var userExists = await _context.Users.AnyAsync(user => user.Email == email);
             if (userExists)
             {
-                return new RegisterResponse(false, "Email is already registered.");
+                throw new ConflictException("Email is already registered.");
             }
             var user = new User
             {
@@ -34,13 +35,13 @@ namespace GameBacklog.Api.Services {
             return new RegisterResponse(true, "Account created successfully");
         }
 
-        public async Task<LoginResponse?> LoginAsync(LoginRequest request) {
+        public async Task<LoginResponse> LoginAsync(LoginRequest request) {
             var email = request.Email.Trim().ToLower();
             var user = await _context.Users.SingleOrDefaultAsync(user => user.Email == email);
 
             if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                return null;
+                throw new UnauthorizedException("Invalid email or password.");
             }
             return CreateResponse(user);
         }

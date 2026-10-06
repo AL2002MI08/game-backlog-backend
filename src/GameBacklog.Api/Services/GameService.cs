@@ -1,4 +1,5 @@
 using GameBacklog.Api.Dtos;
+using GameBacklog.Api.Exceptions;
 using GameBacklog.Api.Services.Interfaces;
 using GameBacklog.Domain.Entities;
 using GameBacklog.Domain.Enums;
@@ -12,13 +13,13 @@ namespace GameBacklog.Api.Services {
 
         public GameService(AppDbContext context) { _context = context; }
 
-        public async Task<GameResponse?> CreateGameAsync(Guid userId, CreateGameRequest request)
+        public async Task<GameResponse> CreateGameAsync(Guid userId, CreateGameRequest request)
         {
             var title = request.Title.Trim();
 
             var gameExists = await _context.Games.AnyAsync(g =>
                 g.UserId == userId && g.Title == title && g.Platform == request.Platform);
-            if (gameExists) return null;
+            if (gameExists) throw new ConflictException("You already have this game on this platform.");
 
             var now = DateTime.UtcNow;
             var game = new Game
@@ -50,16 +51,15 @@ namespace GameBacklog.Api.Services {
             return games.Select(GameResponse.From).ToList();
         }
 
-        public async Task<GameResponse?> GetGameAsync(Guid userId, Guid gameId)
+        public async Task<GameResponse> GetGameAsync(Guid userId, Guid gameId)
         {
             var game = await FindGameAsync(userId, gameId);
-            return game is null ? null : GameResponse.From(game);
+            return GameResponse.From(game);
         }
 
-        public async Task<GameResponse?> UpdateGameAsync(Guid userId, Guid gameId, UpdateGameRequest request)
+        public async Task<GameResponse> UpdateGameAsync(Guid userId, Guid gameId, UpdateGameRequest request)
         {
             var game = await FindGameAsync(userId, gameId);
-            if (game is null) return null;
 
             var now = DateTime.UtcNow;
             if (request.Status is not null) SetStatus(game, request.Status.Value, now);
@@ -71,18 +71,17 @@ namespace GameBacklog.Api.Services {
             return GameResponse.From(game);
         }
 
-        public async Task<bool> DeleteGameAsync(Guid userId, Guid gameId)
+        public async Task DeleteGameAsync(Guid userId, Guid gameId)
         {
             var game = await FindGameAsync(userId, gameId);
-            if (game is null) return false;
 
             _context.Games.Remove(game);
             await _context.SaveChangesAsync();
-            return true;
         }
 
-        private Task<Game?> FindGameAsync(Guid userId, Guid gameId) =>
-            _context.Games.SingleOrDefaultAsync(g => g.Id == gameId && g.UserId == userId);
+        private async Task<Game> FindGameAsync(Guid userId, Guid gameId) =>
+            await _context.Games.SingleOrDefaultAsync(g => g.Id == gameId && g.UserId == userId)
+            ?? throw new NotFoundException("Game not found.");
 
         private static void SetStatus(Game game, GameStatus status, DateTime now)
         {

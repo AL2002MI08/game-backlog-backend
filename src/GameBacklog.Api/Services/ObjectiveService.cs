@@ -1,4 +1,5 @@
 using GameBacklog.Api.Dtos;
+using GameBacklog.Api.Exceptions;
 using GameBacklog.Api.Services.Interfaces;
 using GameBacklog.Domain.Entities;
 using GameBacklog.Infrastructure.Persistence;
@@ -11,15 +12,13 @@ namespace GameBacklog.Api.Services {
 
         public ObjectiveService(AppDbContext context) { _context = context; }
 
-        public Task<bool> GameExistsAsync(Guid userId, Guid gameId) =>
-            _context.Games.AnyAsync(g => g.Id == gameId && g.UserId == userId);
-
-        public async Task<ObjectiveResponse?> CreateObjectiveAsync(Guid gameId, CreateObjectiveRequest request)
+        public async Task<ObjectiveResponse> CreateObjectiveAsync(Guid userId, Guid gameId, CreateObjectiveRequest request)
         {
+            await EnsureGameExistsAsync(userId, gameId);
             var label = request.Label.Trim();
 
             var labelExists = await _context.Objectives.AnyAsync(o => o.GameId == gameId && o.Label == label);
-            if (labelExists) return null;
+            if (labelExists) throw new ConflictException("This game already has an objective with this label.");
 
             var lastPosition = await _context.Objectives
                 .Where(o => o.GameId == gameId)
@@ -42,8 +41,10 @@ namespace GameBacklog.Api.Services {
             return ObjectiveResponse.From(objective);
         }
 
-        public async Task<List<ObjectiveResponse>> GetObjectivesAsync(Guid gameId)
+        public async Task<List<ObjectiveResponse>> GetObjectivesAsync(Guid userId, Guid gameId)
         {
+            await EnsureGameExistsAsync(userId, gameId);
+
             var objectives = await _context.Objectives
                 .Where(o => o.GameId == gameId)
                 .OrderBy(o => o.Position)
@@ -52,10 +53,9 @@ namespace GameBacklog.Api.Services {
             return objectives.Select(ObjectiveResponse.From).ToList();
         }
 
-        public async Task<ObjectiveResponse?> UpdateObjectiveAsync(Guid gameId, Guid objectiveId, UpdateObjectiveRequest request)
+        public async Task<ObjectiveResponse> UpdateObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId, UpdateObjectiveRequest request)
         {
-            var objective = await FindObjectiveAsync(gameId, objectiveId);
-            if (objective is null) return null;
+            var objective = await FindObjectiveAsync(userId, gameId, objectiveId);
 
             var now = DateTime.UtcNow;
             if (request.Completed is not null)
@@ -74,18 +74,26 @@ namespace GameBacklog.Api.Services {
             return ObjectiveResponse.From(objective);
         }
 
-        public async Task<bool> DeleteObjectiveAsync(Guid gameId, Guid objectiveId)
+        public async Task DeleteObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId)
         {
-            var objective = await FindObjectiveAsync(gameId, objectiveId);
-            if (objective is null) return false;
+            var objective = await FindObjectiveAsync(userId, gameId, objectiveId);
 
             _context.Objectives.Remove(objective);
             await _context.SaveChangesAsync();
-
-            return true;
         }
 
-        private Task<Objective?> FindObjectiveAsync(Guid gameId, Guid objectiveId) =>
-            _context.Objectives.SingleOrDefaultAsync(o => o.Id == objectiveId && o.GameId == gameId);
+        private async Task EnsureGameExistsAsync(Guid userId, Guid gameId)
+        {
+            var gameExists = await _context.Games.AnyAsync(g => g.Id == gameId && g.UserId == userId);
+            if (!gameExists) throw new NotFoundException("Game not found.");
+        }
+
+        private async Task<Objective> FindObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId)
+        {
+            await EnsureGameExistsAsync(userId, gameId);
+
+            return await _context.Objectives.SingleOrDefaultAsync(o => o.Id == objectiveId && o.GameId == gameId)
+                ?? throw new NotFoundException("Objective not found.");
+        }
     }
 }

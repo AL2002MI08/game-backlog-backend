@@ -16,9 +16,7 @@ namespace GameBacklog.Api.Controllers {
         public async Task<IActionResult> Create([FromBody] CreateGameRequest request)
         {
             var game = await gameService.CreateGameAsync(UserId, request);
-            return game is null
-                ? Conflict(new { message = "You already have this game on this platform." })
-                : StatusCode(StatusCodes.Status201Created, game);
+            return StatusCode(StatusCodes.Status201Created, game);
         }
 
         [HttpGet]
@@ -30,22 +28,20 @@ namespace GameBacklog.Api.Controllers {
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var game = await gameService.GetGameAsync(UserId, id);
-            return game is null ? NotFound(new { message = "Game not found." }) : Ok(game);
+            return Ok(await gameService.GetGameAsync(UserId, id));
         }
 
         [HttpPatch("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGameRequest request)
         {
-            var game = await gameService.UpdateGameAsync(UserId, id, request);
-            return game is null ? NotFound(new { message = "Game not found." }) : Ok(game);
+            return Ok(await gameService.UpdateGameAsync(UserId, id, request));
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await gameService.DeleteGameAsync(UserId, id);
-            return deleted ? NoContent() : NotFound(new { message = "Game not found." });
+            await gameService.DeleteGameAsync(UserId, id);
+            return NoContent();
         }
     }
 }
