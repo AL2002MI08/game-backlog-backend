@@ -36,7 +36,30 @@ Content-Type: application/json
 
 { "status": "FINISHED", "rating": 10, "notes": "Took 120 hours" }
 
-### Delete a game
+### Add an objective to the game
+# @name createObjective
+POST {{host}}/api/games/{{createGame.response.body.id}}/objectives
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{ "label": "Beat Margit" }
+
+### Get the game's objectives
+GET {{host}}/api/games/{{createGame.response.body.id}}/objectives
+Authorization: Bearer {{login.response.body.token}}
+
+### Complete an objective
+PATCH {{host}}/api/games/{{createGame.response.body.id}}/objectives/{{createObjective.response.body.id}}
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{ "completed": true }
+
+### Delete an objective
+DELETE {{host}}/api/games/{{createGame.response.body.id}}/objectives/{{createObjective.response.body.id}}
+Authorization: Bearer {{login.response.body.token}}
+
+### Delete a game (also deletes its objectives)
 DELETE {{host}}/api/games/{{createGame.response.body.id}}
 Authorization: Bearer {{login.response.body.token}}
 

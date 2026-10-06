@@ -20,6 +20,7 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IObjectiveService, ObjectiveService>();
 builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddAuthRateLimiting();
 builder.Services.AddOpenApi(options =>
