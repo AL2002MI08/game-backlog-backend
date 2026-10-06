@@ -1,9 +1,12 @@
+using System.Text.Json.Serialization;
 using GameBacklog.Api.Extensions;
+using GameBacklog.Api.Middleware;
+using GameBacklog.Api.OpenApi;
 using GameBacklog.Api.Services;
+using GameBacklog.Api.Services.Interfaces;
 using GameBacklog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-// Load variables from .env into the environment before the builder reads configuration.
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,13 +15,22 @@ var connection = builder.Configuration["DB_URL"]
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connection));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddJwtAuth(builder.Configuration);
-builder.Services.AddOpenApi();
+builder.Services.AddAuthRateLimiting();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecurityTransformer>();
+    options.AddOperationTransformer<BearerSecurityTransformer>();
+});
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -31,6 +43,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -13,8 +13,31 @@ Content-Type: application/json
 
 { "email": "test@example.com", "password": "Passw0rd!" }
 
-### Protected endpoint: uses the token from the login response
+### Create a game (uses the token from the login response)
+# @name createGame
+POST {{host}}/api/games
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{ "title": "Elden Ring", "platform": "STEAM", "status": "PLAYING", "rating": 9 }
+
+### Get all my games
 GET {{host}}/api/games
+Authorization: Bearer {{login.response.body.token}}
+
+### Get one game (uses the id from the create response)
+GET {{host}}/api/games/{{createGame.response.body.id}}
+Authorization: Bearer {{login.response.body.token}}
+
+### Update a game (only the fields sent are changed)
+PATCH {{host}}/api/games/{{createGame.response.body.id}}
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{ "status": "FINISHED", "rating": 10, "notes": "Took 120 hours" }
+
+### Delete a game
+DELETE {{host}}/api/games/{{createGame.response.body.id}}
 Authorization: Bearer {{login.response.body.token}}
 
 
