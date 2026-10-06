@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using GameBacklog.Api.Services.Interfaces;
 using GameBacklog.Domain.Entities;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;

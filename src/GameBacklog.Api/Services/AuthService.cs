@@ -1,4 +1,5 @@
 using GameBacklog.Api.Dtos;
+using GameBacklog.Api.Services.Interfaces;
 using GameBacklog.Domain.Entities;
 using GameBacklog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
