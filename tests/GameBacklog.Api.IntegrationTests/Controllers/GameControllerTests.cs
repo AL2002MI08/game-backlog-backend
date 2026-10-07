@@ -11,7 +11,7 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
     [Collection(ApiCollection.Name)]
     public class GameControllerTests(GameBacklogApplicationFactory factory)
     {
-        private const string NotImplemented = "Not supported by the API yet (see DECISION.md).";
+        private const string NotImplemented = "Skipped tests.";
 
         // ---------- Create ----------
 
