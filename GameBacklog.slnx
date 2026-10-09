@@ -5,7 +5,7 @@
     <Project Path="src/GameBacklog.Infrastructure/GameBacklog.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/GameBacklog.IntegrationTests/GameBacklog.IntegrationTests.csproj" />
-    <Project Path="tests/GameBacklog.UnitTests/GameBacklog.UnitTests.csproj" />
+    <Project Path="tests/GameBacklog.Api.IntegrationTests/GameBacklog.Api.IntegrationTests.csproj" />
+    <Project Path="tests/GameBacklog.Api.UnitTests/GameBacklog.Api.UnitTests.csproj" />
   </Folder>
 </Solution>
