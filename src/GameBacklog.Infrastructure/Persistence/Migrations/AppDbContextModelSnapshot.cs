@@ -38,10 +38,8 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                    b.Property<int>("Platform")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("Rating")
                         .HasColumnType("integer");
@@ -49,12 +47,10 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
+                    b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("UNPLAYED");
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -76,6 +72,37 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10");
                         });
+                });
+
+            modelBuilder.Entity("GameBacklog.Domain.Entities.GameStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ChangedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PreviousStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("GameStatusHistories");
                 });
 
             modelBuilder.Entity("GameBacklog.Domain.Entities.Objective", b =>
@@ -146,6 +173,15 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                     b.HasOne("GameBacklog.Domain.Entities.User", null)
                         .WithMany("Games")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GameBacklog.Domain.Entities.GameStatusHistory", b =>
+                {
+                    b.HasOne("GameBacklog.Domain.Entities.Game", null)
+                        .WithMany()
+                        .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
