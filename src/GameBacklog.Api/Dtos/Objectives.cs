@@ -14,10 +14,28 @@ namespace GameBacklog.Api.Dtos
 
     public record UpdateObjectiveRequest
     {
+        [MaxLength(200)]
+        public string? Label { get; init; }
+
         public bool? Completed { get; init; }
 
         [Range(0, int.MaxValue)]
         public int? Position { get; init; }
+    }
+
+    public record ReplaceObjectiveRequest
+    {
+        [Required, MaxLength(200)]
+        public required string Label { get; init; }
+
+        [Range(0, int.MaxValue)]
+        public int? Position { get; init; }
+    }
+
+    public record ReorderObjectivesRequest
+    {
+        [Required]
+        public required List<Guid> ObjectiveIds { get; init; }
     }
 
     public record ObjectiveResponse(

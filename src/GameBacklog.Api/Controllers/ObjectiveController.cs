@@ -28,7 +28,31 @@ namespace GameBacklog.Api.Controllers {
         [HttpPatch("{id:guid}")]
         public async Task<IActionResult> Update(Guid gameId, Guid id, [FromBody] UpdateObjectiveRequest request)
         {
-            return Ok(await objectiveService.UpdateObjectiveAsync(UserId, gameId, id, request));
+            return Ok(await objectiveService.PartialUpdateObjectiveAsync(UserId, gameId, id, request));
+        }
+
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> Replace(Guid gameId, Guid id, [FromBody] ReplaceObjectiveRequest request)
+        {
+            return Ok(await objectiveService.ReplaceObjectiveAsync(UserId, gameId, id, request));
+        }
+
+        [HttpPatch("{id:guid}/complete")]
+        public async Task<IActionResult> Complete(Guid gameId, Guid id)
+        {
+            return Ok(await objectiveService.CompleteObjectiveAsync(UserId, gameId, id));
+        }
+
+        [HttpPatch("{id:guid}/reopen")]
+        public async Task<IActionResult> Reopen(Guid gameId, Guid id)
+        {
+            return Ok(await objectiveService.ReopenObjectiveAsync(UserId, gameId, id));
+        }
+
+        [HttpPut("order")]
+        public async Task<IActionResult> Reorder(Guid gameId, [FromBody] ReorderObjectivesRequest request)
+        {
+            return Ok(await objectiveService.ReorderObjectivesAsync(UserId, gameId, request));
         }
 
         [HttpDelete("{id:guid}")]
@@ -39,3 +63,4 @@ namespace GameBacklog.Api.Controllers {
         }
     }
 }
+
