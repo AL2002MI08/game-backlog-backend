@@ -1,4 +1,5 @@
 using GameBacklog.Api.Dtos;
+using GameBacklog.Api.Events;
 using GameBacklog.Api.Exceptions;
 using GameBacklog.Api.Services;
 using GameBacklog.Api.UnitTests.Fixtures;
@@ -6,6 +7,7 @@ using GameBacklog.Domain.Entities;
 using GameBacklog.Domain.Enums;
 using GameBacklog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GameBacklog.Api.UnitTests.Services;
 
@@ -17,7 +19,7 @@ public class GameServiceTests : IDisposable
 
     public GameServiceTests()
     {
-        _sut = new GameService(_context);
+        _sut = new GameService(_context, new LoggingEventPublisher(NullLogger<LoggingEventPublisher>.Instance));
         _userId = CreateUser();
     }
 

@@ -64,3 +64,7 @@ DELETE {{host}}/api/games/{{createGame.response.body.id}}
 Authorization: Bearer {{login.response.body.token}}
 
 
+
+### Dashboard summary
+GET {{host}}/api/dashboard
+Authorization: Bearer {{login.response.body.token}}
