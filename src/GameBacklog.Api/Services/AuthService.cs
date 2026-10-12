@@ -46,10 +46,16 @@ namespace GameBacklog.Api.Services {
             return CreateResponse(user);
         }
 
+        public async Task<UserProfileResponse> GetCurrentUserAsync(Guid userId){
+            var user = await _context.Users.FindAsync(userId) ?? throw new NotFoundException("User not found!");
+            
+            return new UserProfileResponse(user.Id, user.Email);
+        }
+
         private LoginResponse CreateResponse(User user)
         {
             var (token, expiresAt) = _tokenService.CreateToken(user);
-            return new LoginResponse(token, user.Id, user.Email, expiresAt);
+            return new LoginResponse(token, expiresAt);
         }
     }
 }

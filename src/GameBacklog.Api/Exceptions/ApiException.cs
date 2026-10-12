@@ -9,4 +9,6 @@ namespace GameBacklog.Api.Exceptions {
     public class ConflictException(string message) : ApiException(StatusCodes.Status409Conflict, message);
 
     public class UnauthorizedException(string message) : ApiException(StatusCodes.Status401Unauthorized, message);
+
+    public class BadRequestException(string message) : ApiException(StatusCodes.Status400BadRequest, message);
 }
