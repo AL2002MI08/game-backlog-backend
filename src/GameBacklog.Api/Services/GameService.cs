@@ -41,11 +41,11 @@ namespace GameBacklog.Api.Services {
             };
 
             game.SetStatus(request.Status, now);
-            _context.Games.Add(game);
 
             if (request.Objectives is { Count: > 0 })
-                _context.Objectives.AddRange(request.Objectives.ToEntities(game.Id, now));
+                game.Objectives.AddRange(request.Objectives.ToEntities(game.Id, now));
 
+            _context.Games.Add(game);
             await _context.SaveChangesAsync();
 
             return GameResponse.From(game);

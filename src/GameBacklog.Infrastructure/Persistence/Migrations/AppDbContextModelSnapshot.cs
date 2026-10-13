@@ -71,6 +71,8 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                     b.ToTable("Games", t =>
                         {
                             t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10");
+
+                            t.HasCheckConstraint("CK_Games_UnplayedHasNoRating", "\"Status\" <> 0 OR \"Rating\" IS NULL");
                         });
                 });
 
@@ -189,10 +191,15 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("GameBacklog.Domain.Entities.Objective", b =>
                 {
                     b.HasOne("GameBacklog.Domain.Entities.Game", null)
-                        .WithMany()
+                        .WithMany("Objectives")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GameBacklog.Domain.Entities.Game", b =>
+                {
+                    b.Navigation("Objectives");
                 });
 
             modelBuilder.Entity("GameBacklog.Domain.Entities.User", b =>

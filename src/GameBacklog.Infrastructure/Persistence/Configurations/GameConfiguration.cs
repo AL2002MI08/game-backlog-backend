@@ -21,7 +21,11 @@ namespace GameBacklog.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             builder.HasIndex(g => new { g.UserId, g.Title, g.Platform }).IsUnique();
 
-            builder.ToTable(t => t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10"));
+            builder.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10");
+                t.HasCheckConstraint("CK_Games_UnplayedHasNoRating", $"\"Status\" <> {(int)GameStatus.UNPLAYED} OR \"Rating\" IS NULL");
+            });
         }
     }
 }

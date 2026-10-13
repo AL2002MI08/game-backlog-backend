@@ -15,6 +15,7 @@ namespace GameBacklog.Domain.Entities
         public DateTime? FinishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public List<Objective> Objectives { get; set; } = [];
 
         public bool CanTransitionTo(GameStatus targetStatus) => Status switch
         {

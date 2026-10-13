@@ -26,7 +26,7 @@ namespace GameBacklog.Api.Dtos
 
     public record UpdateGameRequest
     {
-        
+        [MaxLength(100)]
         public string? Title {get; init;}
 
         [EnumDataType(typeof(GameStatus))]
