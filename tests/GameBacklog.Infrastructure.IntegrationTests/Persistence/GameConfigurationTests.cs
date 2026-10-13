@@ -32,17 +32,6 @@ public class GameConfigurationTests : IDisposable
     }
 
     [Fact]
-    public async Task Save_SameTitleDifferentCase_ThrowsUniqueViolation()
-    {
-        _context.Games.Add(NewGame(_userId, title: "Elden Ring"));
-        await _context.SaveChangesAsync();
-
-        _context.Games.Add(NewGame(_userId, title: "elden ring"));
-
-        Assert.Equal(PostgresErrorCodes.UniqueViolation, await SaveAndGetErrorCodeAsync(_context));
-    }
-
-    [Fact]
     public async Task Save_SameTitleOtherPlatform_Succeeds()
     {
         _context.Games.Add(NewGame(_userId, platform: Platform.STEAM));

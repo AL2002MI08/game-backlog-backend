@@ -22,7 +22,8 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
                 new { title = "Hades", platform = "EPIC", objectives = new[] { new { label = "Escape" }, new { label = "Beat Hades" } } });
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-            var game = await response.ReadAsync<GameResponse>();
+            var game = await response.ReadAsync<GameDetailResponse>();
+            Assert.Equal(["Escape", "Beat Hades"], game.Objectives.Select(o => o.Label));
             Assert.Equal(2, await factory.UseDbAsync(db => db.Objectives.CountAsync(o => o.GameId == game.Id)));
         }
 

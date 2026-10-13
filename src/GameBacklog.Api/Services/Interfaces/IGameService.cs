@@ -3,7 +3,7 @@ using GameBacklog.Api.Dtos;
 namespace GameBacklog.Api.Services.Interfaces {
     public interface IGameService
     {
-        Task<GameResponse> CreateGameAsync(Guid userId, CreateGameRequest request);
+        Task<GameDetailResponse> CreateGameAsync(Guid userId, CreateGameRequest request);
         Task<PagedResponse<GameListResponse>> GetGamesAsync(Guid userId, GameQueryParameters query);
         Task<GameDetailResponse> GetGameAsync(Guid userId, Guid gameId);
         Task<GameResponse> UpdateGameAsync(Guid userId, Guid gameId, UpdateGameRequest request);

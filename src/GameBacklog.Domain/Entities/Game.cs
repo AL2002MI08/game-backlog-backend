@@ -11,6 +11,7 @@ namespace GameBacklog.Domain.Entities
         public GameStatus Status { get; set; } = GameStatus.UNPLAYED;
         public int? Rating { get; set; }
         public string? Notes { get; set; }
+        public string? CoverImage { get; set; }
         public DateTime? StartedAt { get; set; }
         public DateTime? FinishedAt { get; set; }
         public DateTime CreatedAt { get; set; }

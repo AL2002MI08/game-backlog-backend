@@ -18,7 +18,7 @@ namespace GameBacklog.Api.Services {
             await _context.Games.EnsureGameExistsAsync(userId, gameId);
             var label = request.Label.Trim();
 
-            var labelExists = await _context.Objectives.AnyAsync(o => o.GameId == gameId && o.Label == label);
+            var labelExists = await _context.Objectives.AnyAsync(o => o.GameId == gameId && o.Label.ToLower() == label.ToLower());
             if (labelExists) throw new ConflictException("This game already has an objective with this label.");
 
             var lastPosition = await _context.Objectives
@@ -67,7 +67,7 @@ namespace GameBacklog.Api.Services {
             if (label != objective.Label)
             {
                 var labelExists = await _context.Objectives.AnyAsync(o =>
-                    o.GameId == gameId && o.Id != objectiveId && o.Label == label);
+                    o.GameId == gameId && o.Id != objectiveId && o.Label.ToLower() == label.ToLower());
                 if (labelExists) throw new ConflictException("This game already has an objective with this label.");
             }
 

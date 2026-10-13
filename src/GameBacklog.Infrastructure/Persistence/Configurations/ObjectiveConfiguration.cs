@@ -17,8 +17,6 @@ namespace GameBacklog.Infrastructure.Persistence.Configurations
                 .WithMany(g => g.Objectives)
                 .HasForeignKey(o => o.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            builder.HasIndex(o => new { o.GameId, o.Label }).IsUnique();
         }
     }
 }

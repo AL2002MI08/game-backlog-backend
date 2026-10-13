@@ -14,6 +14,7 @@ namespace GameBacklog.Infrastructure.Persistence.Configurations
             builder.Property(g => g.Platform);
             builder.Property(g => g.Status).HasDefaultValue(GameStatus.UNPLAYED);
             builder.Property(g => g.Notes).HasMaxLength(2000);
+            builder.Property(g => g.CoverImage).HasMaxLength(500);
             builder.HasOne<User>()
                 .WithMany(u => u.Games)
                 .HasForeignKey(g => g.UserId)

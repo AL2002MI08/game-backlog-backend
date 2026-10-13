@@ -16,7 +16,7 @@ namespace GameBacklog.Api.Services {
 
         public GameService(AppDbContext context, IEventPublisher events) { _context = context; _events = events; }
 
-        public async Task<GameResponse> CreateGameAsync(Guid userId, CreateGameRequest request)
+        public async Task<GameDetailResponse> CreateGameAsync(Guid userId, CreateGameRequest request)
         {
             var title = request.Title.Trim();
 
@@ -36,6 +36,7 @@ namespace GameBacklog.Api.Services {
                 Platform = request.Platform,
                 Rating = request.Rating,
                 Notes = request.Notes,
+                CoverImage = NormalizeCoverImage(request.CoverImage),
                 CreatedAt = now,
                 UpdatedAt = now,
             };
@@ -48,7 +49,8 @@ namespace GameBacklog.Api.Services {
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
 
-            return GameResponse.From(game);
+            var objectives = game.Objectives.OrderBy(o => o.Position).Select(ObjectiveResponse.From).ToList();
+            return GameDetailResponse.From(game, objectives, objectives.Count, completed: 0);
         }
 
         public Task<PagedResponse<GameListResponse>> GetGamesAsync(Guid userId, GameQueryParameters query) =>
@@ -80,28 +82,27 @@ namespace GameBacklog.Api.Services {
             var game = await _context.Games.FindUserGameAsync(userId, gameId);
             var now = DateTime.UtcNow;
 
-            var title = request.Title?.Trim();
-            var platform = request.Platform;
+            var title = request.Title.Trim();
 
-            if (title is not null && platform.HasValue && (title != game.Title || platform.Value != game.Platform))
+            if (title != game.Title || request.Platform != game.Platform)
             {
                 var exists = await _context.Games.AnyAsync(g =>
-                    g.UserId == userId && g.Id != gameId && g.Title.ToLower() == title.ToLower() && g.Platform == platform.Value);
+                    g.UserId == userId && g.Id != gameId && g.Title.ToLower() == title.ToLower() && g.Platform == request.Platform);
                 if (exists) throw new ConflictException("You already have this game on this platform.");
                 game.Title = title;
-                game.Platform = platform.Value;
+                game.Platform = request.Platform;
             }
 
-            var statusChanged = RecordStatusChange(game, request.Status, userId, now, request.Comment);
             if (game.Status == GameStatus.UNPLAYED && request.Rating is not null)
                 throw new BadRequestException("Rating cannot be set on an unplayed game.");
 
             game.Rating = request.Rating;
             game.Notes = request.Notes;
+            game.CoverImage = NormalizeCoverImage(request.CoverImage);
 
             game.UpdatedAt = now;
 
-            await SaveAndPublishAsync(statusChanged);
+            await _context.SaveChangesAsync();
             return GameResponse.From(game);
         }
 
@@ -159,6 +160,18 @@ namespace GameBacklog.Api.Services {
 
             _context.Games.Remove(game);
             await _context.SaveChangesAsync();
+        }
+
+        private static string? NormalizeCoverImage(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+
+            var trimmed = url.Trim();
+            var isWebUrl = Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+            if (!isWebUrl) throw new BadRequestException("Cover image must be an http or https URL.");
+
+            return trimmed;
         }
 
         private async Task SaveAndPublishAsync(GameStatusChangedEvent? statusChanged)

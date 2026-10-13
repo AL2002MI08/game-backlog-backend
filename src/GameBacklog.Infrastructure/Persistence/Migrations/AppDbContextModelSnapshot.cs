@@ -28,6 +28,10 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CoverImage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -137,8 +141,7 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId", "Label")
-                        .IsUnique();
+                    b.HasIndex("GameId");
 
                     b.ToTable("Objectives");
                 });

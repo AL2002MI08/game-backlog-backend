@@ -21,19 +21,19 @@ namespace GameBacklog.Api.Dtos
         [MaxLength(2000)]
         public string? Notes { get; init; }
 
+        [MaxLength(500)]
+        public string? CoverImage { get; init; }
+
         public List<CreateObjectiveRequest>? Objectives { get; init; }
     }
 
     public record UpdateGameRequest
     {
-        [MaxLength(100)]
-        public string? Title {get; init;}
-
-        [EnumDataType(typeof(GameStatus))]
-        public GameStatus? Status { get; init; }
+        [Required, MaxLength(100)]
+        public required string Title { get; init; }
 
         [EnumDataType(typeof(Platform))]
-        public Platform? Platform {get; init;}
+        public required Platform Platform { get; init; }
 
         [Range(1, 10)]
         public int? Rating { get; init; }
@@ -41,37 +41,38 @@ namespace GameBacklog.Api.Dtos
         [MaxLength(2000)]
         public string? Notes { get; init; }
 
-        public string? Comment { get; init; }
+        [MaxLength(500)]
+        public string? CoverImage { get; init; }
     }
 
     public record GameResponse(
         Guid Id, string Title, Platform Platform, GameStatus Status,
-        int? Rating, string? Notes, DateTime? StartedAt, DateTime? FinishedAt,
+        int? Rating, string? Notes, string? CoverImage, DateTime? StartedAt, DateTime? FinishedAt,
         DateTime CreatedAt, DateTime UpdatedAt)
     {
         public static GameResponse From(Game g) => new(
-            g.Id, g.Title, g.Platform, g.Status, g.Rating, g.Notes,
+            g.Id, g.Title, g.Platform, g.Status, g.Rating, g.Notes, g.CoverImage,
             g.StartedAt, g.FinishedAt, g.CreatedAt, g.UpdatedAt);
     }
 
     public record GameListResponse(
         Guid Id, string Title, Platform Platform, GameStatus Status,
-        int? Rating, DateTime UpdatedAt, CompletionProgressResponse Progress)
+        int? Rating, string? CoverImage, DateTime UpdatedAt, CompletionProgressResponse Progress)
     {
         public static GameListResponse From(Game g, int total, int completed) => new(
-            g.Id, g.Title, g.Platform, g.Status, g.Rating, g.UpdatedAt,
+            g.Id, g.Title, g.Platform, g.Status, g.Rating, g.CoverImage, g.UpdatedAt,
             CompletionProgressResponse.From(total, completed));
     }
 
     public record GameDetailResponse(
         Guid Id, string Title, Platform Platform, GameStatus Status,
-        int? Rating, string? Notes, DateTime? StartedAt, DateTime? FinishedAt,
+        int? Rating, string? Notes, string? CoverImage, DateTime? StartedAt, DateTime? FinishedAt,
         DateTime CreatedAt, DateTime UpdatedAt,
         List<ObjectiveResponse> Objectives,
         CompletionProgressResponse Progress)
     {
         public static GameDetailResponse From(Game g, List<ObjectiveResponse> objectives, int total, int completed) => new(
-            g.Id, g.Title, g.Platform, g.Status, g.Rating, g.Notes,
+            g.Id, g.Title, g.Platform, g.Status, g.Rating, g.Notes, g.CoverImage,
             g.StartedAt, g.FinishedAt, g.CreatedAt, g.UpdatedAt,
             objectives,
             CompletionProgressResponse.From(total, completed));

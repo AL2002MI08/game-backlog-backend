@@ -11,12 +11,13 @@ namespace GameBacklog.Api.Extensions
         public Platform Platform { get; init; }
         public GameStatus Status { get; init; }
         public int? Rating { get; init; }
+        public string? CoverImage { get; init; }
         public DateTime UpdatedAt { get; init; }
         public int TotalObjectives { get; init; }
         public int CompletedObjectives { get; init; }
 
         public GameListResponse ToResponse() => new(
-            Id, Title, Platform, Status, Rating, UpdatedAt,
+            Id, Title, Platform, Status, Rating, CoverImage, UpdatedAt,
             CompletionProgressResponse.From(TotalObjectives, CompletedObjectives));
     }
 
@@ -66,6 +67,7 @@ namespace GameBacklog.Api.Extensions
                 Platform = g.Platform,
                 Status = g.Status,
                 Rating = g.Rating,
+                CoverImage = g.CoverImage,
                 UpdatedAt = g.UpdatedAt,
                 TotalObjectives = objectives.Count(o => o.GameId == g.Id),
                 CompletedObjectives = objectives.Count(o => o.GameId == g.Id && o.Completed),

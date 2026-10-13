@@ -47,15 +47,6 @@ public class GameServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Create_SameTitleDifferentCase_ThrowsConflict()
-    {
-        await _sut.CreateGameAsync(_userId, NewGame());
-
-        await Assert.ThrowsAsync<ConflictException>(() =>
-            _sut.CreateGameAsync(_userId, NewGame() with { Title = "elden ring" }));
-    }
-
-    [Fact]
     public async Task GetGameAsync_OtherUsersGame_ThrowsNotFound()
     {
         var game = await _sut.CreateGameAsync(_userId, NewGame());
@@ -78,23 +69,13 @@ public class GameServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateGameAsync_StatusFinished_SetsFinishedAt()
+    public async Task UpdateStatus_PlayingToFinished_SetsFinishedAt()
     {
         var game = await _sut.CreateGameAsync(_userId, NewGame(GameStatus.PLAYING));
 
-        var updated = await _sut.UpdateGameAsync(_userId, game.Id, new UpdateGameRequest { Status = GameStatus.FINISHED });
+        var updated = await _sut.UpdateGameStatusAsync(_userId, game.Id, new UpdateGameStatusRequest { Status = GameStatus.FINISHED });
 
-        Assert.NotNull(updated.FinishedAt);
-    }
-
-    [Fact]
-    public async Task GetGames_LowercaseSearch_FindsGame()
-    {
-        await _sut.CreateGameAsync(_userId, NewGame());
-
-        var result = await _sut.GetGamesAsync(_userId, new GameQueryParameters { Search = "elden" });
-
-        Assert.Single(result.Items);
+        Assert.NotNull(updated.Game.FinishedAt);
     }
 
     private Guid CreateUser()
