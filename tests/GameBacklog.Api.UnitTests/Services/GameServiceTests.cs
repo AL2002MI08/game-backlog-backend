@@ -53,6 +53,20 @@ public class GameServiceTests : IDisposable
 
         await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetGameAsync(Guid.NewGuid(), game.Id));
     }
+    
+    [Fact]
+    public async Task Create_BadObjective_RollsBack()
+    {
+        var request = NewGame() with
+        {
+            Objectives = [new() { Label = "Beat Margit" }, new() { Label = new string('x', 201) }]
+        };
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => _sut.CreateGameAsync(_userId, request));
+
+        _context.ChangeTracker.Clear();
+        Assert.False(await _context.Games.AnyAsync(g => g.UserId == _userId));
+    }
 
     [Fact]
     public async Task UpdateGameAsync_StatusFinished_SetsFinishedAt()
