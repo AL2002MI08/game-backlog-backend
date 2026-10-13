@@ -19,7 +19,6 @@ namespace GameBacklog.Infrastructure.Persistence.Configurations
                 .HasForeignKey(g => g.UserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
-            builder.HasIndex(g => new { g.UserId, g.Title, g.Platform }).IsUnique();
 
             builder.ToTable(t =>
             {

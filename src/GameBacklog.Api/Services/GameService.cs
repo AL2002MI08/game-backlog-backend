@@ -24,7 +24,7 @@ namespace GameBacklog.Api.Services {
                 throw new BadRequestException("Rating cannot be set on an unplayed game.");
 
             var exists = await _context.Games.AnyAsync(g =>
-                g.UserId == userId && g.Title == title && g.Platform == request.Platform);
+                g.UserId == userId && g.Title.ToLower() == title.ToLower() && g.Platform == request.Platform);
             if (exists) throw new ConflictException("You already have this game on this platform.");
 
             var now = DateTime.UtcNow;
@@ -75,24 +75,18 @@ namespace GameBacklog.Api.Services {
             return GameDetailResponse.From(game, objectives.Select(ObjectiveResponse.From).ToList(), total, completed);
         }
 
-        public Task<GameResponse> UpdateGameAsync(Guid userId, Guid gameId, UpdateGameRequest request) =>
-            SaveGameUpdatesAsync(userId, gameId, request, isPartial: false);
-
-        public Task<GameResponse> PartialUpdateGameAsync(Guid userId, Guid gameId, UpdateGameRequest request) =>
-            SaveGameUpdatesAsync(userId, gameId, request, isPartial: true);
-
-        private async Task<GameResponse> SaveGameUpdatesAsync(Guid userId, Guid gameId, UpdateGameRequest request, bool isPartial)
+        public async Task<GameResponse> UpdateGameAsync(Guid userId, Guid gameId, UpdateGameRequest request)
         {
             var game = await _context.Games.FindUserGameAsync(userId, gameId);
             var now = DateTime.UtcNow;
 
-            var title = request.Title?.Trim() ?? (isPartial ? game.Title : null);
-            var platform = request.Platform ?? (isPartial ? game.Platform : default(Platform?));
+            var title = request.Title?.Trim();
+            var platform = request.Platform;
 
             if (title is not null && platform.HasValue && (title != game.Title || platform.Value != game.Platform))
             {
                 var exists = await _context.Games.AnyAsync(g =>
-                    g.UserId == userId && g.Id != gameId && g.Title == title && g.Platform == platform.Value);
+                    g.UserId == userId && g.Id != gameId && g.Title.ToLower() == title.ToLower() && g.Platform == platform.Value);
                 if (exists) throw new ConflictException("You already have this game on this platform.");
                 game.Title = title;
                 game.Platform = platform.Value;
@@ -102,11 +96,8 @@ namespace GameBacklog.Api.Services {
             if (game.Status == GameStatus.UNPLAYED && request.Rating is not null)
                 throw new BadRequestException("Rating cannot be set on an unplayed game.");
 
-            if (!isPartial || request.Rating is not null)
-                game.Rating = game.Status == GameStatus.UNPLAYED ? null : request.Rating;
-
-            if (!isPartial || request.Notes is not null)
-                game.Notes = request.Notes;
+            game.Rating = request.Rating;
+            game.Notes = request.Notes;
 
             game.UpdatedAt = now;
 

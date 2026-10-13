@@ -102,7 +102,7 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        // ---------- Update (PATCH) ----------
+        // ---------- Update (PUT) ----------
 
         [Fact]
         public async Task Update_OtherUsersGame_Returns404AndLeavesGameUnchanged()
@@ -111,7 +111,7 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
             var otherUser = await factory.CreateAuthenticatedClientAsync();
             var game = await owner.CreateGameAsync();
 
-            var response = await otherUser.PatchAsJsonAsync($"/api/games/{game.Id}", new { rating = 1 });
+            var response = await otherUser.PutAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades", platform = "EPIC", rating = 1 });
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             var saved = await factory.UseDbAsync(db => db.Games.SingleAsync(g => g.Id == game.Id));
@@ -125,7 +125,7 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
             await client.CreateGameAsync("Hades", "EPIC");
             var game = await client.CreateGameAsync("Celeste", "EPIC");
 
-            var response = await client.PatchAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades" });
+            var response = await client.PutAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades", platform = "EPIC" });
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
@@ -136,7 +136,7 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
             var client = await factory.CreateAuthenticatedClientAsync();
             var game = await client.CreateGameAsync();
 
-            var response = await client.PatchAsJsonAsync($"/api/games/{game.Id}", new { rating = 8 });
+            var response = await client.PutAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades", platform = "EPIC", rating = 8 });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }

@@ -66,12 +66,12 @@ public class ObjectiveServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Update_MoveToFirst_ShiftsOthersDown()
+    public async Task Replace_MoveToFirst_ShiftsOthersDown()
     {
         var first = await _sut.CreateObjectiveAsync(_userId, _gameId, NewObjective("Beat Margit"));
         var second = await _sut.CreateObjectiveAsync(_userId, _gameId, NewObjective("Beat Radahn"));
 
-        await _sut.PartialUpdateObjectiveAsync(_userId, _gameId, second.Id, new UpdateObjectiveRequest { Position = 1 });
+        await _sut.ReplaceObjectiveAsync(_userId, _gameId, second.Id, new ReplaceObjectiveRequest { Label = "Beat Radahn", Position = 1 });
 
         var objectives = await _sut.GetObjectivesAsync(_userId, _gameId);
         Assert.Equal([second.Id, first.Id], objectives.Select(o => o.Id));

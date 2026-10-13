@@ -55,39 +55,6 @@ namespace GameBacklog.Api.Services {
             return objectives.Select(ObjectiveResponse.From).ToList();
         }
 
-        public async Task<ObjectiveResponse> PartialUpdateObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId, UpdateObjectiveRequest request)
-        {
-            var objective = await FindObjectiveAsync(userId, gameId, objectiveId);
-            var now = DateTime.UtcNow;
-
-            if (request.Label is not null)
-            {
-                var label = request.Label.Trim();
-                if (label != objective.Label)
-                {
-                    var labelExists = await _context.Objectives.AnyAsync(o =>
-                        o.GameId == gameId && o.Id != objectiveId && o.Label == label);
-                    if (labelExists) throw new ConflictException("This game already has an objective with this label.");
-                }
-                objective.Label = label;
-            }
-
-            if (request.Completed is not null)
-            {
-                objective.Completed = request.Completed.Value;
-                objective.CompletedAt = objective.Completed ? objective.CompletedAt ?? now : null;
-            }
-            if (request.Position is not null)
-            {
-                await ReorderObjectiveAsync(gameId, objective, request.Position.Value);
-            }
-            objective.UpdatedAt = now;
-
-            await _context.SaveChangesAsync();
-
-            return ObjectiveResponse.From(objective);
-        }
-
         public async Task<ObjectiveResponse> ReplaceObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId, ReplaceObjectiveRequest request)
         {
             var objective = await FindObjectiveAsync(userId, gameId, objectiveId);

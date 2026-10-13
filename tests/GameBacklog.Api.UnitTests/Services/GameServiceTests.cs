@@ -47,6 +47,15 @@ public class GameServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_SameTitleDifferentCase_ThrowsConflict()
+    {
+        await _sut.CreateGameAsync(_userId, NewGame());
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            _sut.CreateGameAsync(_userId, NewGame() with { Title = "elden ring" }));
+    }
+
+    [Fact]
     public async Task GetGameAsync_OtherUsersGame_ThrowsNotFound()
     {
         var game = await _sut.CreateGameAsync(_userId, NewGame());
@@ -76,6 +85,16 @@ public class GameServiceTests : IDisposable
         var updated = await _sut.UpdateGameAsync(_userId, game.Id, new UpdateGameRequest { Status = GameStatus.FINISHED });
 
         Assert.NotNull(updated.FinishedAt);
+    }
+
+    [Fact]
+    public async Task GetGames_LowercaseSearch_FindsGame()
+    {
+        await _sut.CreateGameAsync(_userId, NewGame());
+
+        var result = await _sut.GetGamesAsync(_userId, new GameQueryParameters { Search = "elden" });
+
+        Assert.Single(result.Items);
     }
 
     private Guid CreateUser()

@@ -37,12 +37,6 @@ namespace GameBacklog.Api.Controllers {
             return Ok(await gameService.UpdateGameAsync(UserId, id, request));
         }
 
-        [HttpPatch("{id:guid}")]
-        public async Task<IActionResult> PartialUpdate(Guid id, [FromBody] UpdateGameRequest request)
-        {
-            return Ok(await gameService.PartialUpdateGameAsync(UserId, id, request));
-        }
-
         [HttpPatch("{id:guid}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateGameStatusRequest request)
         {

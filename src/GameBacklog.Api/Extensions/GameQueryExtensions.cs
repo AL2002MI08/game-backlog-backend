@@ -26,7 +26,7 @@ namespace GameBacklog.Api.Extensions
         {
             var search = query.Search?.Trim().ToLower();
             if (!string.IsNullOrEmpty(search))
-                games = games.Where(g => g.Title.Contains(search));
+                games = games.Where(g => g.Title.ToLower().Contains(search));
 
             if (query.Platform.HasValue)
                 games = games.Where(g => g.Platform == query.Platform.Value);

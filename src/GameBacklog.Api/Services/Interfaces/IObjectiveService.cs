@@ -5,7 +5,6 @@ namespace GameBacklog.Api.Services.Interfaces {
     {
         Task<ObjectiveResponse> CreateObjectiveAsync(Guid userId, Guid gameId, CreateObjectiveRequest request);
         Task<List<ObjectiveResponse>> GetObjectivesAsync(Guid userId, Guid gameId);
-        Task<ObjectiveResponse> PartialUpdateObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId, UpdateObjectiveRequest request);
         Task<ObjectiveResponse> ReplaceObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId, ReplaceObjectiveRequest request);
         Task<ObjectiveResponse> CompleteObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId);
         Task<ObjectiveResponse> ReopenObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId);

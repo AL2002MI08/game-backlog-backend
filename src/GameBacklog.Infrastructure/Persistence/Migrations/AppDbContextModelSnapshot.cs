@@ -65,8 +65,7 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Title", "Platform")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("Games", t =>
                         {
