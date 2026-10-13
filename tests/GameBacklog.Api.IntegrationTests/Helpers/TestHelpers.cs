@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using GameBacklog.Api.Dtos;
 using GameBacklog.Api.IntegrationTests.Fixtures;
 using GameBacklog.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GameBacklog.Api.IntegrationTests.Helpers {
@@ -52,6 +53,22 @@ namespace GameBacklog.Api.IntegrationTests.Helpers {
             response.EnsureSuccessStatusCode();
             return await response.ReadAsync<ObjectiveResponse>();
         }
+
+        public static Task<HttpResponseMessage> ChangeStatusAsync(this HttpClient client, Guid gameId, string status) =>
+            client.PatchAsJsonAsync($"/api/games/{gameId}/status", new { status });
+
+        public static Task<HttpResponseMessage> CompleteObjectiveAsync(this HttpClient client, Guid gameId, Guid objectiveId) =>
+            client.PatchAsync($"/api/games/{gameId}/objectives/{objectiveId}/complete", null);
+
+        public static async Task<T> GetAsync<T>(this HttpClient client, string url)
+        {
+            var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            return await response.ReadAsync<T>();
+        }
+
+        public static Task<int> CountGamesAsync(this GameBacklogApplicationFactory factory, string email) =>
+            factory.UseDbAsync(db => db.Games.CountAsync(g => db.Users.Any(u => u.Id == g.UserId && u.Email == email)));
 
         public static Task<HttpResponseMessage> PostRawJsonAsync(this HttpClient client, string url, string json) =>
             client.PostAsync(url, new StringContent(json, Encoding.UTF8, "application/json"));

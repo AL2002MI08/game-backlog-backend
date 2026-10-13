@@ -55,6 +55,9 @@ namespace GameBacklog.Api.Services {
             return objectives.Select(ObjectiveResponse.From).ToList();
         }
 
+        public async Task<ObjectiveResponse> GetObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId) =>
+            ObjectiveResponse.From(await FindObjectiveAsync(userId, gameId, objectiveId));
+
         public async Task<ObjectiveResponse> ReplaceObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId, ReplaceObjectiveRequest request)
         {
             var objective = await FindObjectiveAsync(userId, gameId, objectiveId);

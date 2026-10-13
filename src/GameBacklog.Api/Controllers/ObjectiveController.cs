@@ -25,6 +25,12 @@ namespace GameBacklog.Api.Controllers {
             return Ok(await objectiveService.GetObjectivesAsync(UserId, gameId));
         }
 
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetById(Guid gameId, Guid id)
+        {
+            return Ok(await objectiveService.GetObjectiveAsync(UserId, gameId, id));
+        }
+
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Replace(Guid gameId, Guid id, [FromBody] ReplaceObjectiveRequest request)
         {
