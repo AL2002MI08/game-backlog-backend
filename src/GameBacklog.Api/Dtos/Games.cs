@@ -109,8 +109,8 @@ namespace GameBacklog.Api.Dtos
         public int? MaxRating { get; init; }
         public bool? HasObjectives { get; init; }
         public bool? IsComplete { get; init; }
-        public string? SortBy { get; init; } // "title", "rating", "progress", "updatedat"
-        public string? SortOrder { get; init; } // "asc" or "desc"
+        public string? SortBy { get; init; }
+        public string? SortOrder { get; init; }
     }
 
 }
