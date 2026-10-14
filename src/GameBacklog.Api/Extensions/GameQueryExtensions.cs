@@ -77,15 +77,19 @@ namespace GameBacklog.Api.Extensions
         {
             var isAsc = string.Equals(query.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
 
-            return query.SortBy?.ToLower() switch
+            var sorted = query.SortBy?.ToLower() switch
             {
                 "title" => isAsc ? rows.OrderBy(r => r.Title) : rows.OrderByDescending(r => r.Title),
-                "rating" => isAsc ? rows.OrderBy(r => r.Rating) : rows.OrderByDescending(r => r.Rating),
+                "rating" => isAsc
+                    ? rows.OrderBy(r => r.Rating == null).ThenBy(r => r.Rating)
+                    : rows.OrderBy(r => r.Rating == null).ThenByDescending(r => r.Rating),
                 "progress" or "completion" => isAsc
                     ? rows.OrderBy(r => r.TotalObjectives == 0 ? -1.0 : (double)r.CompletedObjectives / r.TotalObjectives)
                     : rows.OrderByDescending(r => r.TotalObjectives == 0 ? -1.0 : (double)r.CompletedObjectives / r.TotalObjectives),
                 _ => isAsc ? rows.OrderBy(r => r.UpdatedAt) : rows.OrderByDescending(r => r.UpdatedAt),
             };
+
+            return sorted.ThenBy(r => r.Id);
         }
     }
 }
