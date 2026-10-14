@@ -17,16 +17,23 @@ namespace GameBacklog.Api.Extensions
             if (labels.Distinct(StringComparer.OrdinalIgnoreCase).Count() < labels.Count)
                 throw new BadRequestException("Objective labels within a game must be unique.");
 
-            var position = 1;
-            return list.Select(req => new Objective
+            var objectives = new List<Objective>();
+            foreach (var req in list)
             {
-                Id = Guid.NewGuid(),
-                GameId = gameId,
-                Label = req.Label.Trim(),
-                Position = req.Position ?? position++,
-                CreatedAt = now,
-                UpdatedAt = now
-            }).ToList();
+                var objective = new Objective
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = gameId,
+                    Label = req.Label.Trim(),
+                    Position = objectives.Count + 1,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+                objectives.Add(objective);
+                if (req.Position is not null)
+                    objectives.Reorder(objective, req.Position.Value, now);
+            }
+            return objectives;
         }
 
         public static void Reorder(this List<Objective> list, Objective item, int targetPosition, DateTime now)

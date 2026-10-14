@@ -21,9 +21,10 @@ namespace GameBacklog.Api.Services {
             var labelExists = await _context.Objectives.AnyAsync(o => o.GameId == gameId && o.Label.ToLower() == label.ToLower());
             if (labelExists) throw new ConflictException("This game already has an objective with this label.");
 
-            var lastPosition = await _context.Objectives
+            var objectives = await _context.Objectives
                 .Where(o => o.GameId == gameId)
-                .MaxAsync(o => (int?)o.Position) ?? 0;
+                .OrderBy(o => o.Position)
+                .ToListAsync();
 
             var now = DateTime.UtcNow;
             var objective = new Objective
@@ -31,12 +32,16 @@ namespace GameBacklog.Api.Services {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
                 Label = label,
-                Position = request.Position ?? lastPosition + 1,
+                Position = (objectives.LastOrDefault()?.Position ?? 0) + 1,
                 CreatedAt = now,
                 UpdatedAt = now,
             };
 
             _context.Objectives.Add(objective);
+            objectives.Add(objective);
+            if (request.Position is not null)
+                objectives.Reorder(objective, request.Position.Value, now);
+
             await _context.SaveChangesAsync();
 
             return ObjectiveResponse.From(objective);
@@ -143,8 +148,14 @@ namespace GameBacklog.Api.Services {
         public async Task DeleteObjectiveAsync(Guid userId, Guid gameId, Guid objectiveId)
         {
             var objective = await FindObjectiveAsync(userId, gameId, objectiveId);
-
             _context.Objectives.Remove(objective);
+
+            var remaining = await _context.Objectives
+                .Where(o => o.GameId == gameId && o.Id != objectiveId)
+                .OrderBy(o => o.Position)
+                .ToListAsync();
+            remaining.RenumberPositions(DateTime.UtcNow);
+
             await _context.SaveChangesAsync();
         }
 
