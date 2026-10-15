@@ -1,4 +1,5 @@
 using GameBacklog.Api.Dtos;
+using GameBacklog.Api.Events;
 using GameBacklog.Api.Exceptions;
 using GameBacklog.Api.Services;
 using GameBacklog.Api.UnitTests.Fixtures;
@@ -6,6 +7,7 @@ using GameBacklog.Domain.Entities;
 using GameBacklog.Domain.Enums;
 using GameBacklog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GameBacklog.Api.UnitTests.Services;
 
@@ -17,7 +19,7 @@ public class GameServiceTests : IDisposable
 
     public GameServiceTests()
     {
-        _sut = new GameService(_context);
+        _sut = new GameService(_context, new LoggingEventPublisher(NullLogger<LoggingEventPublisher>.Instance));
         _userId = CreateUser();
     }
 
@@ -51,15 +53,29 @@ public class GameServiceTests : IDisposable
 
         await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetGameAsync(Guid.NewGuid(), game.Id));
     }
+    
+    [Fact]
+    public async Task Create_BadObjective_RollsBack()
+    {
+        var request = NewGame() with
+        {
+            Objectives = [new() { Label = "Beat Margit" }, new() { Label = new string('x', 201) }]
+        };
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => _sut.CreateGameAsync(_userId, request));
+
+        _context.ChangeTracker.Clear();
+        Assert.False(await _context.Games.AnyAsync(g => g.UserId == _userId));
+    }
 
     [Fact]
-    public async Task UpdateGameAsync_StatusFinished_SetsFinishedAt()
+    public async Task UpdateStatus_PlayingToFinished_SetsFinishedAt()
     {
         var game = await _sut.CreateGameAsync(_userId, NewGame(GameStatus.PLAYING));
 
-        var updated = await _sut.UpdateGameAsync(_userId, game.Id, new UpdateGameRequest { Status = GameStatus.FINISHED });
+        var updated = await _sut.UpdateGameStatusAsync(_userId, game.Id, new UpdateGameStatusRequest { Status = GameStatus.FINISHED });
 
-        Assert.NotNull(updated.FinishedAt);
+        Assert.NotNull(updated.Game.FinishedAt);
     }
 
     private Guid CreateUser()

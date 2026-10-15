@@ -14,11 +14,9 @@ namespace GameBacklog.Infrastructure.Persistence.Configurations
             builder.Property(o => o.Label).HasMaxLength(200).IsRequired();
 
             builder.HasOne<Game>()
-                .WithMany()
+                .WithMany(g => g.Objectives)
                 .HasForeignKey(o => o.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            builder.HasIndex(o => new { o.GameId, o.Label }).IsUnique();
         }
     }
 }

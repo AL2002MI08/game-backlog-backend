@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using GameBacklog.Api.Events;
 using GameBacklog.Api.Extensions;
 using GameBacklog.Api.Middleware;
 using GameBacklog.Api.OpenApi;
@@ -21,6 +22,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IObjectiveService, ObjectiveService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
+
+var allowedOrigins = builder.Configuration["ALLOWED_ORIGINS"]?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy => policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
 builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddAuthRateLimiting();
 builder.Services.AddOpenApi(options =>
@@ -42,8 +50,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// A local process bundled with the desktop client can run on plain HTTP by setting USE_HTTPS_REDIRECTION=false.
+if (app.Configuration.GetValue("USE_HTTPS_REDIRECTION", true))
+{
+    app.UseHttpsRedirection();
+}
 
+app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
