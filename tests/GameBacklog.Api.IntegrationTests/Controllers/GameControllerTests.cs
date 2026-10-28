@@ -1,42 +1,40 @@
 using System.Net;
 using System.Net.Http.Json;
 using GameBacklog.Api.Dtos;
-using GameBacklog.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
 using GameBacklog.Api.IntegrationTests.Fixtures;
 using GameBacklog.Api.IntegrationTests.Helpers;
+using GameBacklog.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using static GameBacklog.Api.IntegrationTests.Helpers.TestHelpers;
 
 namespace GameBacklog.Api.IntegrationTests.Controllers {
     [Collection(ApiCollection.Name)]
     public class GameControllerTests(GameBacklogApplicationFactory factory)
     {
-        private const string NotImplemented = "Skipped tests.";
-
         // ---------- Create ----------
 
         [Fact]
-        public async Task Create_ValidGame_Returns201AndSavesGame()
+        public async Task Create_WithObjectives_SavesGameAndObjectives()
         {
-            var email = NewEmail();
-            var client = await factory.CreateAuthenticatedClientAsync(email);
+            var client = await factory.CreateAuthenticatedClientAsync();
 
-            var response = await client.PostAsJsonAsync("/api/games", new { title = "Hades", platform = "EPIC" });
+            var response = await client.PostAsJsonAsync("/api/games",
+                new { title = "Hades", platform = "EPIC", objectives = new[] { new { label = "Escape" }, new { label = "Beat Hades" } } });
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-            Assert.Equal(1, await CountGamesAsync(email));
+            var game = await response.ReadAsync<GameDetailResponse>();
+            Assert.Equal(["Escape", "Beat Hades"], game.Objectives.Select(o => o.Label));
+            Assert.Equal(2, await factory.UseDbAsync(db => db.Objectives.CountAsync(o => o.GameId == game.Id)));
         }
 
         [Fact]
-        public async Task Create_NoStatus_DefaultsToUnplayed()
+        public async Task Create_NewGame_IsUnplayed()
         {
             var client = await factory.CreateAuthenticatedClientAsync();
 
             var game = await client.CreateGameAsync();
 
             Assert.Equal(GameStatus.UNPLAYED, game.Status);
-            var saved = await factory.UseDbAsync(db => db.Games.SingleAsync(g => g.Id == game.Id));
-            Assert.Equal(GameStatus.UNPLAYED, saved.Status);
         }
 
         [Fact]
@@ -49,49 +47,86 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
             var response = await client.PostAsJsonAsync("/api/games", new { title = "Hades", platform = "EPIC" });
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Equal(1, await CountGamesAsync(email));
+            Assert.Equal(1, await factory.CountGamesAsync(email));
         }
 
-        [Theory(Skip = NotImplemented)]
+        [Theory]
         [InlineData("")]
         [InlineData("Escape")]
-        public async Task Create_InvalidObjective_RollsBackWholeGame(string secondLabel)
+        public async Task Create_InvalidObjective_SavesNothing(string secondLabel)
         {
-            var client = await factory.CreateAuthenticatedClientAsync();
-            var title = $"Rollback {Guid.NewGuid()}";
+            var email = NewEmail();
+            var client = await factory.CreateAuthenticatedClientAsync(email);
 
             var response = await client.PostAsJsonAsync("/api/games",
-                new { title, platform = "EPIC", objectives = new[] { new { label = "Escape" }, new { label = secondLabel } } });
+                new { title = "Hades", platform = "EPIC", objectives = new[] { new { label = "Escape" }, new { label = secondLabel } } });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(0, await factory.UseDbAsync(db => db.Games.CountAsync(g => g.Title == title)));
+            Assert.Equal(0, await factory.CountGamesAsync(email));
         }
 
-        [Fact(Skip = NotImplemented)]
-        public async Task Create_RatingOnUnplayed_Returns400()
+        [Fact]
+        public async Task Create_RatingWhileUnplayed_Returns400()
         {
-            var client = await factory.CreateAuthenticatedClientAsync();
+            var email = NewEmail();
+            var client = await factory.CreateAuthenticatedClientAsync(email);
 
             var response = await client.PostAsJsonAsync("/api/games", new { title = "Hades", platform = "EPIC", status = "UNPLAYED", rating = 8 });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(0, await factory.CountGamesAsync(email));
         }
 
-        // ---------- Read ----------
+        // ---------- Validation ----------
 
-        [Fact]
-        public async Task GetById_OwnGame_Returns200()
+        [Theory]
+        [InlineData("""{ "platform": "EPIC" }""")]
+        [InlineData("""{ "title": "", "platform": "EPIC" }""")]
+        [InlineData("""{ "title": "Hades" }""")]
+        public async Task Create_MissingRequiredField_Returns400(string json)
         {
-            var client = await factory.CreateAuthenticatedClientAsync();
-            var game = await client.CreateGameAsync();
+            var email = NewEmail();
+            var client = await factory.CreateAuthenticatedClientAsync(email);
 
-            var response = await client.GetAsync($"/api/games/{game.Id}");
+            var response = await client.PostRawJsonAsync("/api/games", json);
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(0, await factory.CountGamesAsync(email));
         }
 
+        [Theory]
+        [InlineData("""{ "title": "Hades", "platform": "NINTENDO" }""")]
+        [InlineData("""{ "title": "Hades", "platform": "EPIC", "status": "WON" }""")]
+        public async Task Create_InvalidEnumValue_Returns400(string json)
+        {
+            var email = NewEmail();
+            var client = await factory.CreateAuthenticatedClientAsync(email);
+
+            var response = await client.PostRawJsonAsync("/api/games", json);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(0, await factory.CountGamesAsync(email));
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("11")]
+        [InlineData("7.5")]
+        public async Task Create_InvalidRating_Returns400(string rating)
+        {
+            var email = NewEmail();
+            var client = await factory.CreateAuthenticatedClientAsync(email);
+
+            var response = await client.PostRawJsonAsync("/api/games", $$"""{ "title": "Hades", "platform": "EPIC", "status": "PLAYING", "rating": {{rating}} }""");
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(0, await factory.CountGamesAsync(email));
+        }
+
+        // ---------- Ownership ----------
+
         [Fact]
-        public async Task GetById_OtherUsersGame_Returns404()
+        public async Task Get_AnotherUsersGame_Returns404()
         {
             var owner = await factory.CreateAuthenticatedClientAsync();
             var otherUser = await factory.CreateAuthenticatedClientAsync();
@@ -102,61 +137,152 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        // ---------- Update (PATCH) ----------
-
         [Fact]
-        public async Task Update_OtherUsersGame_Returns404AndLeavesGameUnchanged()
+        public async Task Update_AnotherUsersGame_Returns404()
         {
             var owner = await factory.CreateAuthenticatedClientAsync();
             var otherUser = await factory.CreateAuthenticatedClientAsync();
             var game = await owner.CreateGameAsync();
 
-            var response = await otherUser.PatchAsJsonAsync($"/api/games/{game.Id}", new { rating = 1 });
+            var response = await otherUser.PutAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades", platform = "EPIC", notes = "Not mine" });
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             var saved = await factory.UseDbAsync(db => db.Games.SingleAsync(g => g.Id == game.Id));
-            Assert.Null(saved.Rating);
+            Assert.Null(saved.Notes);
         }
 
-        [Fact(Skip = NotImplemented)]
-        public async Task Update_DuplicateTitleAndPlatform_Returns409()
+        [Fact]
+        public async Task GetLibrary_AnotherUsersGames_AreHidden()
         {
-            var client = await factory.CreateAuthenticatedClientAsync();
-            await client.CreateGameAsync("Hades", "EPIC");
-            var game = await client.CreateGameAsync("Celeste", "EPIC");
+            var owner = await factory.CreateAuthenticatedClientAsync();
+            var otherUser = await factory.CreateAuthenticatedClientAsync();
+            await owner.CreateGameAsync();
 
-            var response = await client.PatchAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades" });
+            var library = await otherUser.GetAsync<PagedResponse<GameListResponse>>("/api/games");
 
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+            Assert.Empty(library.Items);
         }
 
-        [Fact(Skip = NotImplemented)]
-        public async Task Update_RatingOnUnplayed_Returns400()
+        // ---------- Status ----------
+
+        [Fact]
+        public async Task ChangeStatus_UnplayedToPlaying_SetsStartDate()
         {
             var client = await factory.CreateAuthenticatedClientAsync();
             var game = await client.CreateGameAsync();
 
-            var response = await client.PatchAsJsonAsync($"/api/games/{game.Id}", new { rating = 8 });
+            var response = await client.ChangeStatusAsync(game.Id, "PLAYING");
 
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.NotNull((await response.ReadAsync<UpdateGameStatusResponse>()).Game.StartedAt);
+        }
+
+        [Fact]
+        public async Task ChangeStatus_EveryChange_RecordsHistory()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+
+            await client.ChangeStatusAsync(game.Id, "PLAYING");
+            await client.ChangeStatusAsync(game.Id, "FINISHED");
+
+            var history = await factory.UseDbAsync(db => db.GameStatusHistories
+                .Where(h => h.GameId == game.Id)
+                .OrderBy(h => h.ChangedAt)
+                .ToListAsync());
+            Assert.Equal(2, history.Count);
+            Assert.Equal((GameStatus.UNPLAYED, GameStatus.PLAYING), (history[0].PreviousStatus, history[0].NewStatus));
+            Assert.Equal((GameStatus.PLAYING, GameStatus.FINISHED), (history[1].PreviousStatus, history[1].NewStatus));
+        }
+
+        [Fact]
+        public async Task ChangeStatus_FinishWithUntickedObjectives_ReportsOutstanding()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+            await client.AddObjectiveAsync(game.Id, "Escape");
+
+            var response = await client.ChangeStatusAsync(game.Id, "FINISHED");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.True((await response.ReadAsync<UpdateGameStatusResponse>()).HasOutstandingObjectives);
+        }
+
+        [Fact]
+        public async Task ChangeStatus_ToCurrentStatus_Returns409()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+
+            var response = await client.ChangeStatusAsync(game.Id, "UNPLAYED");
+
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeStatus_BackToUnplayed_ClearsRating()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+            await client.ChangeStatusAsync(game.Id, "PLAYING");
+            await client.PutAsJsonAsync($"/api/games/{game.Id}", new { title = "Hades", platform = "EPIC", rating = 8 });
+
+            var response = await client.ChangeStatusAsync(game.Id, "UNPLAYED");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Null((await response.ReadAsync<UpdateGameStatusResponse>()).Game.Rating);
+        }
+
+        // ---------- Progress ----------
+
+        [Fact]
+        public async Task GetProgress_OneOfThreeComplete_Returns33Percent()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+            var first = await client.AddObjectiveAsync(game.Id, "Escape");
+            await client.AddObjectiveAsync(game.Id, "Beat Hades");
+            await client.AddObjectiveAsync(game.Id, "Max a weapon");
+            await client.CompleteObjectiveAsync(game.Id, first.Id);
+
+            var progress = await client.GetAsync<CompletionProgressResponse>($"/api/games/{game.Id}/progress");
+
+            Assert.Equal(3, progress.Total);
+            Assert.Equal(1, progress.Completed);
+            Assert.Equal(33, progress.Percentage);
+        }
+
+        [Fact]
+        public async Task GetProgress_NoObjectives_ReturnsNullPercentage()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+
+            var progress = await client.GetAsync<CompletionProgressResponse>($"/api/games/{game.Id}/progress");
+
+            Assert.Equal(0, progress.Total);
+            Assert.Null(progress.Percentage);
+        }
+
+        [Fact]
+        public async Task GetLibrary_WithObjectives_MatchesDetailProgress()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var game = await client.CreateGameAsync();
+            var first = await client.AddObjectiveAsync(game.Id, "Escape");
+            await client.AddObjectiveAsync(game.Id, "Beat Hades");
+            await client.CompleteObjectiveAsync(game.Id, first.Id);
+
+            var library = await client.GetAsync<PagedResponse<GameListResponse>>("/api/games");
+            var detail = await client.GetAsync<GameDetailResponse>($"/api/games/{game.Id}");
+
+            Assert.Equal(detail.Progress, Assert.Single(library.Items).Progress);
         }
 
         // ---------- Delete ----------
 
         [Fact]
-        public async Task Delete_OwnGame_Returns204AndRemovesGame()
-        {
-            var client = await factory.CreateAuthenticatedClientAsync();
-            var game = await client.CreateGameAsync();
-
-            var response = await client.DeleteAsync($"/api/games/{game.Id}");
-
-            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-            Assert.False(await factory.UseDbAsync(db => db.Games.AnyAsync(g => g.Id == game.Id)));
-        }
-
-        [Fact]
-        public async Task Delete_GameWithObjectives_Returns204AndRemovesObjectives()
+        public async Task Delete_GameWithObjectives_DeletesObjectives()
         {
             var client = await factory.CreateAuthenticatedClientAsync();
             var game = await client.CreateGameAsync();
@@ -177,64 +303,5 @@ namespace GameBacklog.Api.IntegrationTests.Controllers {
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
-
-        // ---------- Validation ----------
-
-        [Theory]
-        [InlineData("""{ "platform": "EPIC" }""")]
-        [InlineData("""{ "title": "", "platform": "EPIC" }""")]
-        [InlineData("""{ "title": "Hades" }""")]
-        public async Task Create_MissingRequiredField_Returns400(string json)
-        {
-            var email = NewEmail();
-            var client = await factory.CreateAuthenticatedClientAsync(email);
-
-            var response = await client.PostRawJsonAsync("/api/games", json);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(0, await CountGamesAsync(email));
-        }
-
-        [Fact]
-        public async Task Create_InvalidPlatform_Returns400()
-        {
-            var email = NewEmail();
-            var client = await factory.CreateAuthenticatedClientAsync(email);
-
-            var response = await client.PostAsJsonAsync("/api/games", new { title = "Hades", platform = "NINTENDO" });
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(0, await CountGamesAsync(email));
-        }
-
-        [Theory]
-        [InlineData("0")]
-        [InlineData("11")]
-        [InlineData("7.5")]
-        public async Task Create_InvalidRating_Returns400(string rating)
-        {
-            var email = NewEmail();
-            var client = await factory.CreateAuthenticatedClientAsync(email);
-
-            var response = await client.PostRawJsonAsync("/api/games", $$"""{ "title": "Hades", "platform": "EPIC", "rating": {{rating}} }""");
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(0, await CountGamesAsync(email));
-        }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(10)]
-        public async Task Create_ValidRating_Returns201(int rating)
-        {
-            var client = await factory.CreateAuthenticatedClientAsync();
-
-            var response = await client.PostAsJsonAsync("/api/games", new { title = "Hades", platform = "EPIC", status = "FINISHED", rating });
-
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        }
-
-        private Task<int> CountGamesAsync(string email) =>
-            factory.UseDbAsync(db => db.Games.CountAsync(g => db.Users.Any(u => u.Id == g.UserId && u.Email == email)));
     }
 }

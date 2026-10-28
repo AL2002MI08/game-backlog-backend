@@ -29,12 +29,19 @@ Authorization: Bearer {{login.response.body.token}}
 GET {{host}}/api/games/{{createGame.response.body.id}}
 Authorization: Bearer {{login.response.body.token}}
 
-### Update a game (only the fields sent are changed)
-PATCH {{host}}/api/games/{{createGame.response.body.id}}
+### Update a game (send all fields; rating and notes left out are cleared)
+PUT {{host}}/api/games/{{createGame.response.body.id}}
 Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
-{ "status": "FINISHED", "rating": 10, "notes": "Took 120 hours" }
+{ "title": "Elden Ring", "platform": "STEAM", "rating": 10, "notes": "Took 120 hours" }
+
+### Change a game's status
+PATCH {{host}}/api/games/{{createGame.response.body.id}}/status
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{ "status": "FINISHED", "comment": "Beat the final boss" }
 
 ### Add an objective to the game
 # @name createObjective
@@ -49,11 +56,8 @@ GET {{host}}/api/games/{{createGame.response.body.id}}/objectives
 Authorization: Bearer {{login.response.body.token}}
 
 ### Complete an objective
-PATCH {{host}}/api/games/{{createGame.response.body.id}}/objectives/{{createObjective.response.body.id}}
+PATCH {{host}}/api/games/{{createGame.response.body.id}}/objectives/{{createObjective.response.body.id}}/complete
 Authorization: Bearer {{login.response.body.token}}
-Content-Type: application/json
-
-{ "completed": true }
 
 ### Delete an objective
 DELETE {{host}}/api/games/{{createGame.response.body.id}}/objectives/{{createObjective.response.body.id}}
@@ -64,3 +68,7 @@ DELETE {{host}}/api/games/{{createGame.response.body.id}}
 Authorization: Bearer {{login.response.body.token}}
 
 
+
+### Dashboard summary
+GET {{host}}/api/dashboard
+Authorization: Bearer {{login.response.body.token}}

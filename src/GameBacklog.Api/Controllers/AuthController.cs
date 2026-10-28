@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using GameBacklog.Api.Dtos;
 using GameBacklog.Api.Extensions;
 using GameBacklog.Api.Services.Interfaces;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GameBacklog.Api.Controllers {
     [ApiController]
@@ -20,6 +22,16 @@ namespace GameBacklog.Api.Controllers {
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             return Ok(await authService.LoginAsync(request));
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var currentUser = await authService.GetCurrentUserAsync(userId);
+
+            return Ok(currentUser);
         }
     }
 }

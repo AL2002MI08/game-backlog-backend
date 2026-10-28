@@ -28,6 +28,10 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CoverImage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -65,12 +69,13 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Title", "Platform")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("Games", t =>
                         {
                             t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10");
+
+                            t.HasCheckConstraint("CK_Games_UnplayedHasNoRating", "\"Status\" <> 0 OR \"Rating\" IS NULL");
                         });
                 });
 
@@ -136,8 +141,7 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId", "Label")
-                        .IsUnique();
+                    b.HasIndex("GameId");
 
                     b.ToTable("Objectives");
                 });
@@ -189,10 +193,15 @@ namespace GameBacklog.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("GameBacklog.Domain.Entities.Objective", b =>
                 {
                     b.HasOne("GameBacklog.Domain.Entities.Game", null)
-                        .WithMany()
+                        .WithMany("Objectives")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GameBacklog.Domain.Entities.Game", b =>
+                {
+                    b.Navigation("Objectives");
                 });
 
             modelBuilder.Entity("GameBacklog.Domain.Entities.User", b =>

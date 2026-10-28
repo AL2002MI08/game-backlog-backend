@@ -20,9 +20,9 @@ namespace GameBacklog.Api.Controllers {
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] GameQueryParameters query)
         {
-            return Ok(await gameService.GetGamesAsync(UserId));
+            return Ok(await gameService.GetGamesAsync(UserId, query));
         }
 
         [HttpGet("{id:guid}")]
@@ -31,10 +31,28 @@ namespace GameBacklog.Api.Controllers {
             return Ok(await gameService.GetGameAsync(UserId, id));
         }
 
-        [HttpPatch("{id:guid}")]
+        [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGameRequest request)
         {
             return Ok(await gameService.UpdateGameAsync(UserId, id, request));
+        }
+
+        [HttpPatch("{id:guid}/status")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateGameStatusRequest request)
+        {
+            return Ok(await gameService.UpdateGameStatusAsync(UserId, id, request));
+        }
+
+        [HttpGet("{id:guid}/progress")]
+        public async Task<IActionResult> GetProgress(Guid id)
+        {
+            return Ok(await gameService.GetGameProgressAsync(UserId, id));
+        }
+
+        [HttpGet("{id:guid}/history")]
+        public async Task<IActionResult> GetHistory(Guid id, [FromQuery] PaginationParameters pagination)
+        {
+            return Ok(await gameService.GetGameHistoryAsync(UserId, id, pagination));
         }
 
         [HttpDelete("{id:guid}")]

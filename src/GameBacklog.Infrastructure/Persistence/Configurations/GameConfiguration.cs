@@ -14,14 +14,18 @@ namespace GameBacklog.Infrastructure.Persistence.Configurations
             builder.Property(g => g.Platform);
             builder.Property(g => g.Status).HasDefaultValue(GameStatus.UNPLAYED);
             builder.Property(g => g.Notes).HasMaxLength(2000);
+            builder.Property(g => g.CoverImage).HasMaxLength(500);
             builder.HasOne<User>()
                 .WithMany(u => u.Games)
                 .HasForeignKey(g => g.UserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
-            builder.HasIndex(g => new { g.UserId, g.Title, g.Platform }).IsUnique();
 
-            builder.ToTable(t => t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10"));
+            builder.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Games_Rating", "\"Rating\" BETWEEN 1 AND 10");
+                t.HasCheckConstraint("CK_Games_UnplayedHasNoRating", $"\"Status\" <> {(int)GameStatus.UNPLAYED} OR \"Rating\" IS NULL");
+            });
         }
     }
 }
