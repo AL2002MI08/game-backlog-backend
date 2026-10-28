@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+.env
+.env.*
+.git/
+.gitignore
+.claude/
+.vs/
+.vscode/
+.idea/
+tests/
+k8s/
+scripts/
+*.md
+Dockerfile
+.dockerignore
