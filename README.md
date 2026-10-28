@@ -30,3 +30,30 @@ ASP.NET Core API for gamers to manage their game backlog: track status, rate gam
 dotnet run --project src/GameBacklog.Api --launch-profile http
 ```
 Swagger: http://localhost:5112/swagger
+
+## Run on Kubernetes (kind)
+1. Create the cluster (1 control plane, 2 workers):
+   ```
+   kind create cluster --name gamebacklog --config kind-config.yaml
+   ```
+2. Build the image and load it into the cluster:
+   ```
+   docker build -t gamebacklog-api:v1 .
+   kind load docker-image gamebacklog-api:v1 --name gamebacklog
+   ```
+3. Create the secret (values stay out of the repo):
+   ```
+   kubectl create secret generic db-secret \
+     --from-literal=POSTGRES_PASSWORD='choose-a-password' \
+     --from-literal=JWT_KEY="$(openssl rand -base64 48)"
+   ```
+4. Deploy and open the API:
+   ```
+   kubectl apply -f k8s/
+   kubectl port-forward svc/api 8080:80
+   ```
+   Health: http://localhost:8080/health/ready
+5. Delete the cluster when done:
+   ```
+   kind delete cluster --name gamebacklog
+   ```
